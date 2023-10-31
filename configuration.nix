@@ -1,4 +1,4 @@
-{ config, pkgs, lib,... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Imports
@@ -52,6 +52,7 @@
 
   # Nix Settings
   nix.settings.auto-optimise-store = true;
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   # Hardware Configuration
   hardware = {
@@ -59,20 +60,15 @@
       enable = true;
       driSupport = true;
       driSupport32Bit = true;
-      extraPackages = with pkgs; [
-        nvidia-vaapi-driver
-      ];
-      extraPackages32 = with pkgs.pkgsi686Linux; [
-        nvidia-vaapi-driver
-      ];
+      extraPackages = with pkgs; [ nvidia-vaapi-driver ];
+      extraPackages32 = with pkgs.pkgsi686Linux; [ nvidia-vaapi-driver ];
     };
     nvidia = {
       forceFullCompositionPipeline = true;
       modesetting.enable = true;
       open = false;
       nvidiaSettings = true;
-      package = config.boot.kernelPackages.nvidiaPackages.latest;
-
+      package = config.boot.kernelPackages.nvidiaPackages.stable;
       prime = {
         offload = {
           enable = true;
@@ -86,7 +82,6 @@
 
   # Power Management Configuration
   powerManagement.enable = true;
-  powerManagement.cpuFreqGovernor = lib.mkDefault "ondemand";
   services.thermald.enable = true;
   services.auto-cpufreq.enable = true;
   services.auto-cpufreq.settings = {
@@ -111,10 +106,23 @@
   # Extra Services
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-    ];
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
   };
+
+  # Programs
+  programs.adb.enable = true;
+
+  # Steam
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+    dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
+  };
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+    # "steam"
+    # "steam-original"
+    # "steam-run"
+  ];
 
   # Services Configuration
   services.flatpak.enable = true;
@@ -129,7 +137,7 @@
     pulse.enable = true;
     # If you want to use JACK applications, uncomment this
     # jack.enable = true;
-    # use the example session manager (no others are packaged yet so this is enabled by default,
+    # use the example session manager (no others are packaged yet, so this is enabled by default,
     # no need to redefine it in your config for now)
     # media-session.enable = true;
   };
@@ -141,7 +149,7 @@
   users.users.moon = {
     isNormalUser = true;
     description = "moon";
-    extraGroups = [ "networkmanager" "wheel" "wireshark" ];
+    extraGroups = [ "networkmanager" "wheel" "wireshark" "adbusers" ];
     packages = with pkgs; [
       # Uncomment packages you want to install for the user.
       # firefox
@@ -163,8 +171,6 @@
     }))
     direnv
     nitrogen
-    libsForQt5.kdenlive
-    element-desktop
     picom
     i3lock-fancy
     git
@@ -176,21 +182,22 @@
     dunst
     neovim
     obs-studio
-    tor-browser-bundle-bin
     openh264
-    firefox
-    pavucontrol
-    discord
     librewolf
-    pywal
+    pavucontrol
+    xfce.thunar
+    redshift
+    discord
     spotify
     zathura
     ranger
     cmus
+    vscode
+    ueberzug
     alacritty
-    xfce.thunar
+    brave
+    mpv
   ];
-
   # Firewall Configuration
   networking.firewall.enable = true;
   # networking.firewall.allowedTCPPorts = [ ... ];
@@ -199,4 +206,3 @@
   # State Version
   system.stateVersion = "23.05";
 }
-
